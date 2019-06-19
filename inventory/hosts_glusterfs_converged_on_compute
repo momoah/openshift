@@ -1,3 +1,6 @@
+# Example provided for: https://linuxystuff.blogspot.com/2019/06/an-openshift-311-lab-using-converged.html
+# This inventory example demonstrates a multi-kuberneties label, converged glusterfs install.
+
 [masters]
 openshift-master.momolab
 
@@ -34,7 +37,8 @@ openshift_router_selector='node-role.kubernetes.io/router=true'
 openshift_registry_selector='node-role.kubernetes.io/infra=true'
 openshift_disable_check=docker_image_availability
 
-#custom openshift_node_groups but that shit is ugly
+# Custom openshift_node_groups, mainly for the router node, but can be created for glusterfs compute.
+ 
 openshift_node_groups=[{'name': 'node-config-master', 'labels': ['node-role.kubernetes.io/master=true']},{'name': 'node-config-infra', 'labels': ['node-role.kubernetes.io/infra=true']},{'name': 'node-config-compute', 'labels': ['node-role.kubernetes.io/compute=true']},{'name': 'node-config-router', 'labels': ['node-role.kubernetes.io/router=true']}]
 
 openshift_enable_docker_excluder=False
@@ -159,5 +163,6 @@ openshift_logging_storage_kind=dynamic
 openshift_logging_storage_volume_name=logging
 openshift_logging_storage_volume_size=10Gi
 openshift_logging_storage_labels={'storage': 'logging'}
+
 
 

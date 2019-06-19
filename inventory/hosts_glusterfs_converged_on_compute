@@ -1,0 +1,163 @@
+[masters]
+openshift-master.momolab
+
+[etcd]
+openshift-master.momolab
+
+[nodes]
+openshift-master.momolab openshift_node_group_name='node-config-master'
+openshift-infra-router.momolab openshift_node_group_name='node-config-router'
+openshift-infra-other.momolab openshift_node_group_name='node-config-infra'
+openshift-compute1.momolab openshift_node_group_name='node-config-compute'
+openshift-compute2.momolab openshift_node_group_name='node-config-compute'
+openshift-compute3.momolab openshift_node_group_name='node-config-compute'
+
+[glusterfs]
+openshift-compute1.momolab glusterfs_devices='[ "/dev/vdb"]'
+openshift-compute2.momolab glusterfs_devices='[ "/dev/vdb"]'
+openshift-compute3.momolab glusterfs_devices='[ "/dev/vdb"]'
+
+# Create an OSEv3 group that contains the masters and nodes groups
+[OSEv3:children]
+masters
+nodes
+etcd
+glusterfs
+
+[OSEv3:vars]
+###############################################################################
+# Common/ Required configuration variables follow                             #
+###############################################################################
+
+#remember to change the router node label later.
+openshift_router_selector='node-role.kubernetes.io/router=true'
+openshift_registry_selector='node-role.kubernetes.io/infra=true'
+openshift_disable_check=docker_image_availability
+
+#custom openshift_node_groups but that shit is ugly
+openshift_node_groups=[{'name': 'node-config-master', 'labels': ['node-role.kubernetes.io/master=true']},{'name': 'node-config-infra', 'labels': ['node-role.kubernetes.io/infra=true']},{'name': 'node-config-compute', 'labels': ['node-role.kubernetes.io/compute=true']},{'name': 'node-config-router', 'labels': ['node-role.kubernetes.io/router=true']}]
+
+openshift_enable_docker_excluder=False
+openshift_docker_options="--log-opt max-size=10M --log-opt max-file=3"
+
+#https://docs.openshift.com/container-platform/3.11/install_config/persistent_storage/persistent_storage_glusterfs.html
+#glusterfs
+openshift_storage_glusterfs_namespace=app-storage
+openshift_storage_glusterfs_name=storage
+openshift_storage_glusterfs_storageclass=true
+openshift_storage_glusterfs_storageclass_default=false
+openshift_storage_glusterfs_block_deploy=true
+openshift_storage_glusterfs_block_host_vol_size=192
+openshift_storage_glusterfs_block_host_vol_create=true
+openshift_storage_glusterfs_block_storageclass=true
+openshift_storage_glusterfs_block_storageclass_default=false
+openshift_storage_glusterfs_nodeselector='node-role.kubernetes.io/compute=true'
+#openshift_storage_glusterfs_nodeselector={"node-role.kubernetes.io/compute": "true"}
+openshift_storage_glusterfs_use_default_selector=False
+
+# This is very important:
+openshift_master_dynamic_provisioning_enabled=True
+
+# SSH user, this user should allow ssh based auth without requiring a
+# password. If using ssh key based auth, then the key should be managed by an
+# ssh agent.
+ansible_user=root
+
+# If ansible_user is not root, ansible_become must be set to true and the
+# user must be configured for passwordless sudo
+#ansible_become=yes
+
+# Specify the deployment type. Valid values are origin and openshift-enterprise.
+#openshift_deployment_type=origin
+openshift_deployment_type=openshift-enterprise
+
+# Specify the generic release of OpenShift to install. This is used mainly just during installation, after which we
+# rely on the version running on the first master. Works best for containerized installs where we can usually
+# use this to lookup the latest exact version of the container images, which is the tag actually used to configure
+# the cluster. For RPM installations we just verify the version detected in your configured repos matches this
+# release.
+openshift_release="3.11"
+
+# default subdomain to use for exposed routes, you should have wildcard dns
+# for *.apps.test.example.com that points at your infra nodes which will run
+# your router
+openshift_master_default_subdomain=cloudapps.momolab
+
+#Set cluster_hostname to point at your load balancer
+openshift_master_cluster_hostname=master.momolab
+
+
+
+###############################################################################
+# Additional configuration variables follow                                   #
+###############################################################################
+
+# https://access.redhat.com/solutions/3949971
+openshift_storage_glusterfs_image=registry.redhat.io/rhgs3/rhgs-server-rhel7:v3.11
+openshift_storage_glusterfs_block_image=registry.redhat.io/rhgs3/rhgs-gluster-block-prov-rhel7:v3.11
+openshift_storage_glusterfs_heketi_image=registry.redhat.io/rhgs3/rhgs-volmanager-rhel7:v3.11
+
+# 
+# Debug level for all OpenShift components (Defaults to 2)
+debug_level=2
+
+# Specify an exact container image tag to install or configure.
+# WARNING: This value will be used for all hosts in containerized environments, even those that have another version installed.
+# This could potentially trigger an upgrade and downtime, so be careful with modifying this value after the cluster is set up.
+openshift_image_tag=v3.11.104
+
+# Specify an exact rpm version to install or configure.
+# WARNING: This value will be used for all hosts in RPM based environments, even those that have another version installed.
+# This could potentially trigger an upgrade and downtime, so be careful with modifying this value after the cluster is set up.
+openshift_pkg_version=-3.11.104
+
+# If using Atomic Host, you may specify system container image registry for the nodes:
+#system_images_registry="docker.io"
+# when openshift_deployment_type=='openshift-enterprise'
+system_images_registry="registry.redhat.io"
+
+# Manage openshift example imagestreams and templates during install and upgrade
+openshift_install_examples=true
+
+# If oreg_url points to a registry requiring authentication, provide the following:
+#oreg_url=registry.redhat.io/openshift3/ose-${component}:${version}
+oreg_auth_user="user"
+oreg_auth_password="password"
+
+
+# htpasswd auth
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
+# admin/password: 
+openshift_master_htpasswd_users={'admin': '$apr1$YPKL/762$KD51rLzoKDZR9Rsy9116w0'}
+
+openshift_examples_registryurl=registry.redhat.io
+openshift_examples_modify_imagestreams=true
+
+openshift_hosted_router_selector='node-role.kubernetes.io/router=true'
+
+openshift_hosted_registry_selector='node-role.kubernetes.io/infra=true'
+openshift_hosted_manage_registry=true
+openshift_hosted_registry_storage_kind=dynamic
+#openshift_hosted_registry_storage_access_modes=['ReadWriteMany']
+openshift_hosted_registry_storage_volume_name=registry
+openshift_hosted_registry_storage_volume_size=20Gi
+
+
+openshift_metrics_install_metrics=true
+openshift_metrics_storage_kind=dynamic
+#openshift_metrics_storage_access_modes=['ReadWriteOnce']
+openshift_metrics_storage_volume_name=metrics
+openshift_metrics_storage_volume_size=10Gi
+openshift_metrics_storage_labels={'storage': 'metrics'}
+
+
+openshift_logging_install_logging=true
+# https://access.redhat.com/solutions/3654961 ->
+openshift_logging_es_ops_nodeselector={"node-role.kubernetes.io/infra":"true"}
+openshift_logging_es_nodeselector={"node-role.kubernetes.io/infra":"true"}
+openshift_logging_storage_kind=dynamic
+openshift_logging_storage_volume_name=logging
+openshift_logging_storage_volume_size=10Gi
+openshift_logging_storage_labels={'storage': 'logging'}
+
+

@@ -45,7 +45,8 @@ openshift_docker_options="--log-opt max-size=10M --log-opt max-file=3"
 #https://docs.openshift.com/container-platform/3.11/install_config/persistent_storage/persistent_storage_glusterfs.html
 #glusterfs
 openshift_storage_glusterfs_namespace=app-storage
-openshift_storage_glusterfs_name=storage
+openshift_storage_glusterfs_name=convergedstorage
+#openshift_storage_glusterfs_name=storage
 openshift_storage_glusterfs_storageclass=true
 openshift_storage_glusterfs_storageclass_default=true
 openshift_storage_glusterfs_block_deploy=true

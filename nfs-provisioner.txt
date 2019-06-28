@@ -134,4 +134,71 @@ docker-registry   Bound     pvc-ff5582c2-999d-11e9-b26a-525400b2c1ce   20Gi     
 
 oc set volume deploymentconfigs/docker-registry --add --name=registry-storage -t pvc --claim-name=docker-registry --overwrite
 
+-----
+
+When redeploying metrics:
+
+run openshift-metrics/config.yml and ensure you update the metrics:true
+
+ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/openshift-metrics/config.yml
+
+delete pvc and recreate it
+
+[root@openshift-master ~]# cat metrics-cassandra-pvc.yml 
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: metrics-cassandra-1
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "managed-nfs-storage"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+[root@openshift-master ~]# oc create -f metrics-cassandra-pvc.yml
+persistentvolumeclaim/metrics-cassandra-1 created
+[root@openshift-master ~]# oc get pvc
+NAME                  STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          AGE
+metrics-cassandra-1   Bound     pvc-c4a0218f-99a1-11e9-b26a-525400b2c1ce   10Gi       RWO            managed-nfs-storage   3s
+
+
+oc delete pod hawkular-cassandra....
+
+------------LOGGING----------
+
+
+ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/openshift-logging/config.yml
+
+sing project "openshift-infra" on server "https://master.momolab:8443".
+[root@openshift-master ~]# oc project openshift-logging
+lNow using project "openshift-logging" on server "https://master.momolab:8443".
+[root@openshift-master ~]# oc get pvc
+NAME           STATUS    VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS          AGE
+logging-es-0   Pending                                       managed-nfs-storage   36s
+
+[root@openshift-master ~]# cat logging-es-0.yml 
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: logging-es-0
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "managed-nfs-storage"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+[root@openshift-master ~]# oc delete pvc logging-es-0
+persistentvolumeclaim "logging-es-0" deleted
+[root@openshift-master ~]# oc create -f logging-es-0.yml
+persistentvolumeclaim/logging-es-0 created
+[root@openshift-master ~]# oc get pvc
+NAME           STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          AGE
+logging-es-0   Bound     pvc-2e7dcde3-99a5-11e9-b26a-525400b2c1ce   10Gi       RWO            managed-nfs-storage   3s
+
 

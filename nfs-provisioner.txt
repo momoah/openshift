@@ -1,0 +1,137 @@
+git clone https://github.com/kubernetes-incubator/external-storage
+
+oc new-project provisioner
+
+[root@openshift-master ~]# export NAMESPACE=provisioner
+[root@openshift-master ~]# env |grep NAMESPACE
+NAMESPACE=provisioner
+
+[root@openshift-master nfs-client]# pwd
+/root/external-storage/nfs-client
+[root@openshift-master nfs-client]# sed -i'' "s/namespace:.*/namespace: $NAMESPACE/g" ./deploy/rbac.yaml
+[root@openshift-master nfs-client]# oc create -f ./deploy/rbac.yaml 
+serviceaccount/nfs-client-provisioner created
+clusterrole.rbac.authorization.k8s.io/nfs-client-provisioner-runner created
+clusterrolebinding.rbac.authorization.k8s.io/run-nfs-client-provisioner created
+role.rbac.authorization.k8s.io/leader-locking-nfs-client-provisioner created
+rolebinding.rbac.authorization.k8s.io/leader-locking-nfs-client-provisioner created
+
+oc adm policy add-scc-to-user hostmount-anyuid system:serviceaccount:$NAMESPACE:nfs-client-provisioner
+
+[root@openshift-master nfs-client]# cat ./deploy/class.yaml 
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: managed-nfs-storage
+provisioner: nfs-storage # or choose another name, must match deployment's env PROVISIONER_NAME'
+parameters:
+  archiveOnDelete: "false"
+
+[root@openshift-master nfs-client]# cat ./deploy/deployment.yaml 
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nfs-client-provisioner
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: nfs-client-provisioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: quay.io/external_storage/nfs-client-provisioner:latest
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: nfs-storage
+            - name: NFS_SERVER
+              value: nfsserver.momolab
+            - name: NFS_PATH
+              value: /opt/nfs
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: nfsserver.momolab
+            path: /opt/nfs
+
+[root@openshift-master nfs-client]# oc create -f ./deploy/class.yaml 
+storageclass.storage.k8s.io/managed-nfs-storage created
+[root@openshift-master nfs-client]# oc create -f ./deploy/deployment.yaml 
+deployment.extensions/nfs-client-provisioner created
+Error from server (AlreadyExists): error when creating "./deploy/deployment.yaml": serviceaccounts "nfs-client-provisioner" already exists
+
+[root@openshift-master nfs-client]# oc get all
+NAME                                          READY     STATUS    RESTARTS   AGE
+pod/nfs-client-provisioner-5d756c4f44-srmj5   1/1       Running   0          4m
+
+NAME                                     DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nfs-client-provisioner   1         1         1            1           4m
+
+NAME                                                DESIRED   CURRENT   READY     AGE
+replicaset.apps/nfs-client-provisioner-5d756c4f44   1         1         1         4m
+
+------------------------------
+
+[root@openshift-master nfs-client]# oc create -f deploy/test-claim.yaml -f deploy/test-pod.yaml
+persistentvolumeclaim/test-claim created
+pod/test-pod created
+[root@openshift-master nfs-client]# oc get pods
+NAME                                      READY     STATUS              RESTARTS   AGE
+nfs-client-provisioner-5d756c4f44-srmj5   1/1       Running             0          6m
+test-pod                                  0/1       ContainerCreating   0          3s
+[root@openshift-master nfs-client]# oc get pvc
+NAME         STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          AGE
+test-claim   Bound     pvc-2810ab27-999d-11e9-b26a-525400b2c1ce   1Mi        RWX            managed-nfs-storage   11s
+[root@openshift-master nfs-client]# oc delete -f deploy/test-pod.yaml -f deploy/test-claim.yaml
+pod "test-pod" deleted
+persistentvolumeclaim "test-claim" deleted
+[root@openshift-master nfs-client]# oc get pvc
+No resources found.
+
+[root@openshift-master nfs-client]# oc get storageclass
+NAME                  PROVISIONER   AGE
+managed-nfs-storage   nfs-storage   7m
+[root@openshift-master nfs-client]# oc patch storageclass managed-nfs-storage -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": "true"}}}'
+storageclass.storage.k8s.io/managed-nfs-storage patched
+[root@openshift-master nfs-client]# oc get storageclass
+NAME                            PROVISIONER   AGE
+managed-nfs-storage (default)   nfs-storage   8m
+
+# oc project default
+
+[root@openshift-master ~]# cat docker-registry-pvc.yml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: docker-registry
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "managed-nfs-storage"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+
+root@openshift-master nfs-client]# oc create -f docker-registry-pvc.yml 
+persistentvolumeclaim/docker-registry created
+[root@openshift-master nfs-client]# oc get pvc
+NAME              STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          AGE
+docker-registry   Bound     pvc-ff5582c2-999d-11e9-b26a-525400b2c1ce   20Gi       RWX            managed-nfs-storage   5s
+
+
+oc set volume deploymentconfigs/docker-registry --add --name=registry-storage -t pvc --claim-name=docker-registry --overwrite
+
+

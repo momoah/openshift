@@ -1,3 +1,17 @@
+###############################################################################
+# Document location: https://github.com/momoah/openshift/blob/master/setup_dynamic_nfs_provisioning.txt
+# Blog reference: https://linuxystuff.blogspot.com/2019/06/install-openshift-311-in-your-home-lab.html
+# OpenShift 3.11 inventory: https://github.com/momoah/openshift/blob/master/inventory/hosts_kubenfs
+###############################################################################
+
+STEPS:
+------
+
+Install OpenShift in your lab without dynamic storage for docker-registry and without installing metrics or logging. Sample inventory successfully used to do this: https://github.com/momoah/openshift/blob/master/inventory/hosts_kubenfs
+
+
+
+
 git clone https://github.com/kubernetes-incubator/external-storage
 
 oc new-project provisioner

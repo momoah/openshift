@@ -1,3 +1,8 @@
+# Document location: https://github.com/momoah/openshift/blob/master/inventory/hosts_kubenfs
+# As highlighted in https://linuxystuff.blogspot.com/2019/06/install-openshift-311-in-your-home-lab.html
+# Install OpenShift first without dynamic storage for the docker-register, metrics and logging.
+# Then follow the steps highlighted in: https://github.com/momoah/openshift/blob/master/nfs-provisioner.txt
+
 [masters]
 openshift-master.momolab
 

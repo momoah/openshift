@@ -1,4 +1,14 @@
 #!/bin/bash
+# Author: Mohammad Ahmad <mahmad@redhat.com>
+# Version 1.0
+# Version Control:
+# - 1.0: Initial draft (Created 20191110)
+# Description:
+# This script needs to be run on the satellite server where you can run the hammer command. 
+# It will create the docker images as satellite repositories within a product.
+# For more information on how to perform disconnected installation of OpenShift with satellite, 
+# see: https://developers.redhat.com/blog/2019/04/08/red-hat-openshift-3-11-disconnected-installation-using-satellite-docker-registry/
+
 
 # Replace your tokenID and secret with the actual values below:
 

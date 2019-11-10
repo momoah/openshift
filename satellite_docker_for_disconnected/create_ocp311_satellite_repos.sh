@@ -15,10 +15,19 @@
 # From: https://access.redhat.com/terms-based-registry/#/token/
 PATH=$PATH:/usr/local/sbin:/sbin:/bin:/usr/sbin:/usr/bin:/opt/puppetlabs/bin:/root/bin
 
+# Auth related:
 TOKENID="MyTokenID"
 SECRET="MySecret"
+
+# Satellite related:
 MYORG="MyOrg"
 MYPRODUCT="ocp311"
+
+# OpenShift image list:
+# Full list (400GB+): https://github.com/momoah/openshift/blob/master/satellite_docker_for_disconnected/minimal_ocp311_images.txt
+# Minimal required: https://github.com/momoah/openshift/blob/master/satellite_docker_for_disconnected/all_ocp311_images.txt
+# Image lists can be composed from: https://docs.openshift.com/container-platform/3.11/install/disconnected_install.html#disconnected-syncing-images
+
 MYOCPIMAGEFILE="minimal_ocp311_images.txt"
 
 

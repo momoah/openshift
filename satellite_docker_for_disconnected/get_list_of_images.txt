@@ -1,0 +1,4 @@
+The list of images cannot be found from one place, but mainly from:
+
+curl  -s https://registry.redhat.io/v1/search?q=openshift3%20or%20rhel7/etcd%22  | python -mjson.tool | grep ".name.:" | cut -d: -f2 | sed -e "s/ "//g"" -e "s/,"//g"" | sed -e "s/\"//g" | egrep -v 'rhel7/etcd3|rhel7/flannel' > openshift3_images.txt
+
